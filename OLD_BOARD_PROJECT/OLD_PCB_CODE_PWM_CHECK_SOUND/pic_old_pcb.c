@@ -67,6 +67,9 @@ void main() {
        case 1:
             PWM1_Init(1000);
             break;
+		case default:
+            PWM1_Init(1000);
+            break;	
             
        }
 
