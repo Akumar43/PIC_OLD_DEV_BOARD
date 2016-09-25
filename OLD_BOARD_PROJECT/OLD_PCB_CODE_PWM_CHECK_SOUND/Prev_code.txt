@@ -1,0 +1,127 @@
+char uart_rd;
+
+
+sbit LCD_RS at RD1_bit;
+sbit LCD_EN at RD0_bit;
+sbit LCD_D4 at RD2_bit;
+sbit LCD_D5 at RD3_bit;
+sbit LCD_D6 at RC4_bit;
+sbit LCD_D7 at RC5_bit;
+
+sbit LCD_RS_Direction at TRISD1_bit;
+sbit LCD_EN_Direction at TRISD0_bit;
+sbit LCD_D4_Direction at TRISD2_bit;
+sbit LCD_D5_Direction at TRISD3_bit;
+sbit LCD_D6_Direction at TRISC4_bit;
+sbit LCD_D7_Direction at TRISC5_bit;
+
+ stepper_cycle()
+ {
+ PORTB.f6=1 ;
+ PORTB.f5=0;
+ PORTB.f4=0;
+ PORTB.f3=0;
+ 
+ delay_ms(250);
+ 
+ PORTB.f6=0 ;
+ PORTB.f5=1;
+ PORTB.f4=0;
+ PORTB.f3=0;
+ 
+  delay_ms(250);
+
+ PORTB.f6=0 ;
+ PORTB.f5=0;
+ PORTB.f4=1;
+ PORTB.f3=0;
+ 
+  delay_ms(250);
+
+ PORTB.f6=0 ;
+ PORTB.f5=0;
+ PORTB.f4=0;
+ PORTB.f3=1;
+ 
+  delay_ms(250);
+ 
+ }
+
+////////////////////////
+unsigned int sec=0;
+unsigned int min=0;
+unsigned int hour=0;
+unsigned int ms=0;
+
+
+void InitTimer0(){
+  OPTION_REG         = 0x82;
+  TMR0                 = 6;
+  INTCON         = 0xA0;
+}
+
+void Interrupt(){
+  if (TMR0IF_bit){
+    TMR0IF_bit         = 0;
+    TMR0                 = 6;
+       ms++;
+       if(ms>=1000)
+       {
+           ms=0;
+           sec++;
+       }
+       if(sec>=60)
+       {
+           sec=0;
+           min++;
+       }
+       if(min>=60)
+       {
+           min=0;
+           hour++;
+       }
+       if(hour>=24)
+       {
+           hour=0;
+       }
+
+  }
+}
+
+ char src[8], dest[8];
+////////////////////////////
+
+void main() {
+     TRISB=0x00;
+     PORTB=0x00;
+  UART1_Init(2400);               // Initialize UART module at 9600 bps
+  Delay_ms(100);                  // Wait for UART module to stabilize
+
+  UART1_Write_Text("Start");
+  UART1_Write(10);
+  UART1_Write(13);
+    Lcd_Init();
+    Lcd_Out(1,1,"HELLO");
+    Delay_ms(100);
+    InitTimer0();
+  
+
+  while (1) {                     // Endless loop
+    if (UART1_Data_Ready()) {     // If data is received,
+      uart_rd = UART1_Read();     // read the received data,
+      UART1_Write(uart_rd);       // and send data via UART
+    }
+    
+    IntToStr(sec,src);
+    strcat(dest, src);
+    IntToStr(min,src);
+    strcat(dest, src);
+     IntToStr(hour,src);
+    strcat(dest, src);
+      Lcd_Out(1,1,dest);
+    
+     ///////////////////////
+    stepper_cycle();
+    ///////////////////////
+  }
+}
